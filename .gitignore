@@ -1,0 +1,5 @@
+/data/gigaword
+/data/chambers
+venv/
+code/__pycache__
+data/GoogleNews-vectors-negative300.magnitude
