@@ -12,7 +12,7 @@ loader = build_loader(file_path)
 
 EMBEDDING = False
 COREF = False
-EXAMPLE = "Kevin joined the army. Kevin served the army. Kevin oversaw the army. Kevin resigned from the navy." 
+EXAMPLE = "Kevin joined the army. Kevin served the army. Kevin oversaw the army. Kevin resigned from the army." 
 MAX_LENGTH = 1000000
 text = loader.get_text()[:MAX_LENGTH]
 # text = EXAMPLE
