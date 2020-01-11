@@ -34,22 +34,33 @@ class Event:
 def count(event1, event2, document):
     # matches performed using dependency type
     frequency = 0
+    """
     for event_1 in document.events:
         for event_2 in document.events:
             if event1.verb == event_1.verb and event2.verb == event_2.verb:
                 if event1.dependency_type == event2.dependency_type:
                     frequency += 1
     return frequency
+    """
+
+    for event in document.events:
+        if event.verb == event1.verb or event.verb == event2.verb:
+            # todo: replace with coreferring entity id
+            if event.dependency_type == event1.dependency_type and event.dependency_type == event2.dependency_type:
+                frequency += 1
+    return frequency
 
 """joint coreference probability (section 4)"""
 def joint_event_prob(event1, event2, document):
     # marginalizing over each verb/dependency pair
-    total = 0
+    total = sum([document.events[x] for x in document.events])
+    """ 
     for x in document.verbs:
         for y in document.verbs:
             for d in document.dependency_types:
                 for f in document.dependency_types:
                     total += count(Event(None, x, None, d), Event(None, y, None, f), document)
+    """
     return count(event1, event2, document) / total
 
 """coreference probability (section 4)"""
@@ -57,7 +68,7 @@ def event_prob(event1, document):
     count = 0
     for event in document.events:
         if event1 == event:
-            count += 1
+            count += document.events[event]
     return count / sum([document.events[x] for x in document.events])
 
 """pointwise mutual information approximation"""
