@@ -6,7 +6,6 @@ certifi==2019.11.28
 chardet==3.0.4
 cymem==2.0.3
 docutils==0.15.2
-en-core-web-sm==2.1.0
 fasteners==0.15
 h5py==2.10.0
 idna==2.8
