@@ -11,11 +11,11 @@ loader = build_loader(file_path)
 # loader.sanity_check()
 
 EMBEDDING = False
-COREF = False
-EXAMPLE = "Kevin joined the army. Kevin served the army. Kevin oversaw the army. Kevin resigned from the navy." 
+COREF = True
+EXAMPLE = "Kevin joined the army. He served the army. He then oversaw the army. Finally, he resigned from the navy." 
 MAX_LENGTH = 1000000
-text = loader.get_text()[:MAX_LENGTH]
-# text = EXAMPLE
+# text = loader.get_text()[:MAX_LENGTH]
+text = EXAMPLE
 
 document = parse_document(text, coref=COREF, lemma=True)
 export_events(document, "events_export.txt")
