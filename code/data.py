@@ -29,3 +29,11 @@ def build_loader(file_path):
     loader = DataLoader(file_path)
     loader.clean_agiga_text()
     return loader
+
+def export_events(document, file_path):
+    with open(file_path, "w") as file:
+        for event in document.ordered_events:
+            file.write("\n")
+            file.write(str(event))
+            file.write(" ")
+            file.write(str(document.events[event]))
