@@ -44,10 +44,15 @@ def parse_syntax():
 """Returns a Document object containing a frequency dictionary of type Event -> integer"""
 def parse_document(text, coref=False, lemma=False):
     nlp = spacy.load("en")
-    if coref: neuralcoref.add_to_pipe(nlp)
+
+    # if coreference resolution is on, then set corpus to be resolved text
+    if coref: 
+        neuralcoref.add_to_pipe(nlp)
+        text = nlp(text)._.coref_resolved
+    
     corpus = nlp(text)
     document = Document()
-
+    
     # Finding a verb with a subject from below
     for possible_subject in corpus:
         if possible_subject.dep in {nsubj, nsubjpass} and possible_subject.head.pos == VERB:
