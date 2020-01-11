@@ -10,13 +10,14 @@ file_path = "data/agiga/export.txt"
 loader = build_loader(file_path)
 # loader.sanity_check()
 
-EMBEDDING = True
+EMBEDDING = False
+COREF = False
 EXAMPLE = "Kevin joined the army. Kevin served the army. Kevin oversaw the army. Kevin resigned from the navy." 
 MAX_LENGTH = 1000000
 text = loader.get_text()[:MAX_LENGTH]
 # text = EXAMPLE
 
-document = parse_document(text, lemma=True)
+document = parse_document(text, coref=COREF, lemma=True)
 export_events(document, "events_export.txt")
 events = list(document.events.items())
 
@@ -75,6 +76,7 @@ def test_prediction():
 
 def test_cloze():
     print("\nTesting Cloze Task")
+    print("# of possible events: ", len(document.events))
 
     print("\nnyt narrative chains: ")
     accuracy = score_predictions(nyt_test_pairs, document, embedding=EMBEDDING)
@@ -85,6 +87,8 @@ def test_cloze():
     print("model position average: ", accuracy)
 
 """Test Runner"""
-# test_prior()
+test_prior()
+test_joint()
+test_pmi()
 test_prediction()
 test_cloze()

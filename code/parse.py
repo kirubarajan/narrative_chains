@@ -42,9 +42,9 @@ def parse_syntax():
 
 """Dependency Parsing and Coreference Resolution using SpaCy Package"""
 """Returns a Document object containing a frequency dictionary of type Event -> integer"""
-def parse_document(text, lemma=False):
+def parse_document(text, coref=False, lemma=False):
     nlp = spacy.load("en")
-    neuralcoref.add_to_pipe(nlp)
+    if coref: neuralcoref.add_to_pipe(nlp)
     corpus = nlp(text)
     document = Document()
 
