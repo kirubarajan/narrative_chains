@@ -86,8 +86,29 @@ Kevin oversaw army | Kevin joined army | -2.3083356884473307
 
 The exact output depends on the tests configured under `"""Test Runner"""`. Note the symmetry of calculations since each discrete event shares the same coreferring (i.e. exact match) verb arguments.
 
-Evaluation is performed using the *Narrative Cloze* Evaluation Task for narrative coherence. Implementation can be found in `code/evaluation.py`. A narrative chain is provided to the task, and an event is removed in order for the model to perform a prediction to be evaluated on. The aim of the task is to perform a fill-in-the-blanks task, which upon successful completion indicates the presence of coherent narrative knowledge by the model.
-Given of tuple list of `(chain, event)` where `chain` is missing the true prediction `event`, the function `score_predictions` returns the average model position. The model position is defined as the true event's position in the model's ranked candidate outputs (lower is better).
+Evaluation is performed using the *Narrative Cloze* Evaluation Task for narrative coherence. Implementation can be found in `code/evaluation.py`. A narrative chain is provided to the task and an event is removed in order for the model to perform a prediction to be evaluated on. The aim of the task is to perform a fill-in-the-blanks task, which upon successful completion indicates the presence of coherent narrative knowledge by the model. Given of tuple list of `(chain, event)` where `chain` is missing the true prediction `event`, the function `score_predictions` returns the average model position. The model position is defined as the true event's position in the model's ranked candidate outputs (lower is better).
+
+An example of the Narrative Cloze output:
+
+```
+nyt narrative chains:
+position:  750
+position:  34
+position:  882
+position:  11
+position:  4
+position:  387
+position:  35
+position:  118
+position:  489
+position:  882
+position:  68
+position:  30
+position:  18
+position:  31
+position:  478
+model position average:  281.1333333333333
+```
 
 ## Changelog 
 
