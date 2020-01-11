@@ -1,21 +1,23 @@
 """Script for testing document parsing and narrative chain creation"""
 
-from data import build_loader
+from data import build_loader, export_events
 from parse import parse_document
 from models import Event, event_prob, joint_event_prob, pmi_approx, predict_events
-from evaluation import predict_blank, score_predictions, get_position
+from evaluation import predict_blank, score_predictions, get_position, nyt_test_pairs, common_sense_test_pairs
 
 """Data Pre-Processing"""
-# file_path = ""
-# loader = build_loader(file_path)
+file_path = "data/agiga/export.txt"
+loader = build_loader(file_path)
 # loader.sanity_check()
 
+EMBEDDING = True
 EXAMPLE = "Kevin joined the army. Kevin served the army. Kevin oversaw the army. Kevin resigned from the navy." 
 MAX_LENGTH = 1000000
-# text = loader.get_text()[:MAX_LENGTH]
-text = EXAMPLE
+text = loader.get_text()[:MAX_LENGTH]
+# text = EXAMPLE
 
-document = parse_document(text)
+document = parse_document(text, lemma=True)
+export_events(document, "events_export.txt")
 events = list(document.events.items())
 
 def test_prior():
@@ -47,31 +49,42 @@ def test_pmi():
     print(event1, "|", event2, "|", pmi_approx(event1, event2, document))
 
 def test_prediction():
-    print("\ntesting event prediction")
+    print("\nTesting Event Prediction")
     event1, event2 = Event("Somebody", "joined", "navy", "dobj"), Event("Somebody", "served", "navy", "dobj")
-
-    print(event_prob(event1, document))
-    print(event_prob(event2, document))
+    chain = [event1, event2]
+    # print(event_prob(event1, document))
+    # print(event_prob(event2, document))
     # print(joint_event_prob(event1, events[1][0], document))
-    print(predict_events([event1, event2], document, embedding=True)[0])
+    
+    print("\nCurrent Chain: ")
+    for event in chain: 
+        print(event.verb, event.dependency_type)
+    
+    print("\nRanked Predictions and Scores:")
+    ranked_predictions = predict_events(chain, document, n=50, embedding=EMBEDDING, include_ranks=True)
+    for prediction, score in ranked_predictions:
+        print(prediction.verb, prediction.dependency_type, score)
+
+    print("\nTesting Greedy Chain Generation")
+    chain = [Event("I", "play", "game", "dobj")]
+    print("seed event: ", chain[0])
+    for i in range(3):
+        prediction = predict_events(chain, document, n=1, embedding=EMBEDDING)[0]
+        chain.append(prediction)
+        print(prediction.verb, prediction.dependency_type)
 
 def test_cloze():
-    print("\ntesting cloze task")
-    event1, event2 = Event("Somebody", "joined", "navy", "dobj"), Event("Somebody", "served", "navy", "dobj")
-    event3 = Event("Somebody", "oversaw", "navy", "dobj")
-    chain = [event1, event2, event3]
-    
-    predictions, correct = predict_blank(chain, document, 0)
-    print("model position: ", get_position(predictions, correct))
+    print("\nTesting Cloze Task")
 
-    # for simplicity, assume all dependency types are direct objects
-    chain1 = [Event("I", "wrote", "poem", "dobj"), Event("I", "presented", "poem", "dobj")]
-    chain2 = [Event("Kevin", "started", "game", "dobj"), Event("Kevin", "played", "game", "dobj")]
-    chain3 = [Event("He", "jumped", "up", "dobj"), Event("He", "fell", "down", "dobj")]
+    print("\nnyt narrative chains: ")
+    accuracy = score_predictions(nyt_test_pairs, document, embedding=EMBEDDING)
+    print("model position average: ", accuracy)
 
-    test_pairs = [(chain1, Event("I", "won", "award", "dobj")), (chain2, Event("Kevin", "won", "game", "dobj")), (chain3, Event("He", "hurt", "himself", "dobj"))]
-    accuracy = score_predictions(test_pairs, document)
+    print("\ncommon sense narrative chains")
+    accuracy = score_predictions(common_sense_test_pairs, document, embedding=EMBEDDING)
     print("model position average: ", accuracy)
 
 """Test Runner"""
-# insert desired tests here
+# test_prior()
+test_prediction()
+test_cloze()
