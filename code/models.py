@@ -11,6 +11,7 @@ class Document:
         self.dependencies = set()
         self.dependency_types = set()
         self.events = defaultdict(int)
+        self.ordered_events = list()
 
 """event class definition for tracking event arguments and pos tags"""
 class Event:
@@ -67,11 +68,15 @@ def pmi_approx(event1, event2, document):
     return math.log(result) if result > 0 else 0 
 
 """predict next event given ordered list of events"""
-def predict_events(chain, document, n=1, embedding=False, include_ranks=False):
+def predict_events(chain, document, n=None, embedding=False, include_ranks=False):
     # iterate over every event in the document
     # compute sum of pmi between candidate and chain and take top n
 
-    if embedding: vectors = Magnitude("data/GoogleNews-vectors-negative300.magnitude")
+    if n is None:
+        n = len(document.events)
+    if embedding: 
+        vectors = Magnitude("data/GoogleNews-vectors-negative300.magnitude")
+
     scores = dict()
     for candidate in document.events:
         score = 0
@@ -81,8 +86,16 @@ def predict_events(chain, document, n=1, embedding=False, include_ranks=False):
             score += similarity
         scores[candidate] = score
 
-    ranked_scores = sorted(list(scores.items()), key=lambda x: x[1], reverse=True)
-    # for candidate, score in ranked_scores: print(candidate, score)
+    cleaned_scores = dict()
+    verbs = set()
+    for event in chain:
+        verbs.add(event.verb)
+
+    for candidate in scores:
+        if candidate.verb not in verbs:
+            cleaned_scores[candidate] = scores[candidate]
+    
+    ranked_scores = sorted(list(cleaned_scores.items()), key=lambda x: x[1], reverse=True)
     
     if include_ranks: return ranked_scores[:n]
     else: return [x[0] for x in ranked_scores[:n]]
