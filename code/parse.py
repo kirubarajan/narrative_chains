@@ -2,7 +2,7 @@
 from collections import defaultdict
 import stanfordnlp
 import spacy
-# import neuralcoref
+import neuralcoref
 from spacy.symbols import nsubj, nsubjpass, VERB
 from models import Event, Document
 
@@ -42,9 +42,9 @@ def parse_syntax():
 
 """Dependency Parsing and Coreference Resolution using SpaCy Package"""
 """Returns a Document object containing a frequency dictionary of type Event -> integer"""
-def parse_document(text):
+def parse_document(text, lemma=False):
     nlp = spacy.load("en")
-    # neuralcoref.add_to_pipe(nlp)
+    neuralcoref.add_to_pipe(nlp)
     corpus = nlp(text)
     document = Document()
 
@@ -53,10 +53,15 @@ def parse_document(text):
         if possible_subject.dep in {nsubj, nsubjpass} and possible_subject.head.pos == VERB:
             for dependent in possible_subject.head.children:
                 if dependent.dep_ in {"dobj", "iobj", "pobj", "obj"}:
-                    event = Event(possible_subject.text, possible_subject.head.text, dependent.text, dependent.dep_)
+                    if lemma:
+                        verb = possible_subject.head.lemma_
+                    else:
+                        verb = possible_subject.head.text
+                    event = Event(possible_subject.text, verb, dependent.text, dependent.dep_)
+                    document.verbs.add(verb)
                     document.subjects.add(possible_subject.text)
-                    document.verbs.add(possible_subject.head.text)
                     document.dependencies.add(dependent.text)
                     document.dependency_types.add(dependent.dep_)
                     document.events[event] += 1
+                    document.ordered_events.append(event)
     return document
