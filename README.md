@@ -1,7 +1,7 @@
 # Unsupervised Learning of Narrative Event Chains
 > Nathanael Chambers and Dan Jurafsky (2008)
 
-An updated implementation of *Unsupervised Learning of Narrative Event Chains* by Chambers and Jurafsky (2008) as part of an independent study project at the University of Pennsylvania, Fall 2019. The overall goal of the project is to learn discrete representations of narrative knowledge through **Narrative Events** and orderings known as **Narrative Chains**. Examples of identified narrative events are:
+An updated implementation of *Unsupervised Learning of Narrative Event Chains* by Chambers and Jurafsky (2008) as part of an independent study project at the University of Pennsylvania, Fall 2019. The overall goal of the project is to learn discrete representations of narrative knowledge through **Narrative Events** and orderings known as **Narrative Chains**. Examples of identified narrative events in the format `(subject, verb, dependency, dependency_type, probability)` are:
 
 ```
 you kiss girl dobj 0.00023724792408066428
@@ -10,7 +10,14 @@ God bestows benefaction dobj 0.00023724792408066428
 Astronomers observed planets dobj 0.00023724792408066428
 ```
 
-in the format `(subject, verb, dependency, dependency_type, probability)`
+An example of a generated narrative chain (using a Greedy Decoding strategy):
+
+```
+seed event:  I play game dobj
+score dobj
+win dobj
+beat dobj
+```
 
 ## Updated Dependencies
 This implementation of (Chambers and Jurafsky, 2008) uses updated libaries, classes and functions. Written in Python, using the Stanford CoreNLP library (updated dependency parsing from transition model to neural-based Universal Dependencies) as well as the SpaCy pipeline (with extensions from HuggingFace). 
@@ -80,6 +87,12 @@ Kevin oversaw army | Kevin joined army | -2.3083356884473307
 The exact output depends on the tests configured under `"""Test Runner"""`. Note the symmetry of calculations since each discrete event shares the same coreferring (i.e. exact match) verb arguments.
 
 Evaluation is performed using the *Narrative Cloze* Evaluation Task for narrative coherence. Implementation can be found in `code/evaluation.py`. A narrative chain is provided to the task, and an event is removed in order for the model to perform a prediction to be evaluated on. The aim of the task is to perform a fill-in-the-blanks task, which upon successful completion indicates the presence of coherent narrative knowledge by the model.
+Given of tuple list of `(chain, event)` where `chain` is missing the true prediction `event`, the function `score_predictions` returns the average model position. The model position is defined as the true event's position in the model's ranked candidate outputs (lower is better).
+
+## Changelog 
+
+- lemmatizing verbs before parsing
+- removing seen verbs in chain from prediction candidates
 
 ## License
 MIT License
