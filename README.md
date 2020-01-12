@@ -30,7 +30,7 @@ do nsubj -> I do
 want nsubj -> I want
 ```
 
-## Updated Dependencies
+## Updates and Extensions
 This implementation of (Chambers and Jurafsky, 2008) uses updated libaries, classes and functions. Written in Python, using the Stanford CoreNLP library (updated dependency parsing from transition model to neural-based Universal Dependencies) as well as the SpaCy pipeline (with extensions from HuggingFace). 
 
 The following libraries are used throughout the study:
