@@ -1,7 +1,9 @@
 # Unsupervised Learning of Narrative Event Chains
 > Nathanael Chambers and Dan Jurafsky (2008)
 
-An updated implementation of *Unsupervised Learning of Narrative Event Chains* by Chambers and Jurafsky (2008) as part of an independent study project at the University of Pennsylvania, Fall 2019. The overall goal of the project is to learn discrete representations of narrative knowledge through **Narrative Events** and orderings known as **Narrative Chains**. Examples of identified narrative events in the format `(subject, verb, dependency, dependency_type, probability)` are:
+An updated implementation of *Unsupervised Learning of Narrative Event Chains* by Chambers and Jurafsky (2008) as part of an independent study project at the University of Pennsylvania, Fall 2019. The overall goal of the project is to learn discrete representations of narrative knowledge through **Narrative Events** and orderings known as **Narrative Chains**. 
+
+From the paper: "Since we  are  focusing  on  a  single  actor  in  this  study,  a narrative event is thus a tuple of the event and the typed dependency of the protagonist". Examples of identified narrative events in the format `(subject, verb, dependency, dependency_type, probability)` are:
 
 ```
 you kiss girl dobj 0.00023724792408066428
@@ -12,11 +14,19 @@ Astronomers observed planets dobj 0.00023724792408066428
 
 An example of a generated narrative chain (using a Greedy Decoding strategy):
 
+(Embedding-Similary Based)
 ```
-seed event:  I play game dobj
-score dobj
-win dobj
-beat dobj
+seed event: play I dsubj -> I play
+score nsubj -> I score
+win nsubj -> I win
+beat nubj -> I beat
+```
+
+(Pointwise Mutual Information Approximation Based)
+``` seed event:  go I nsubj -> I go
+get nsubj -> I get
+do nsubj -> I do
+want nsubj -> I want
 ```
 
 ## Updated Dependencies
