@@ -3,37 +3,47 @@ import neuralcoref
 import spacy
 from collections import defaultdict
 from spacy.symbols import nsubj, nsubjpass, VERB
-from data import build_loader, export_events
 
 # set constants
-INPUT_FILE = "input.txt"
-OUTPUT_FILE = "events_export.txt"
-MAX_LENGTH = 10_000
+INPUT_FILE = "data/input1.txt"
+OUTPUT_FILE = "export.txt"
+MAX_LENGTH = 1_000_000
+CHUNK_LENGTH = 100_000
 
+##### TODO: chunk and support multiple files
 # clean data
-loader = build_loader(INPUT_FILE)
-text = loader.get_text()[:MAX_LENGTH]
+# loader = build_loader(INPUT_FILE)
+# text = loader.get_text()[:MAX_LENGTH] 
 
-# resolve entities and gramatically parse 
-nlp = spacy.load("en")
-neuralcoref.add_to_pipe(nlp)
-entitied_text = nlp(text.lower())._.coref_resolved
-corpus = nlp(entitied_text)
+with open(INPUT_FILE) as f:
+    text = " ".join(f.readlines()[13:-7])
 
 # identify events
 subjects = defaultdict(lambda: defaultdict(int))
 objects = defaultdict(lambda: defaultdict(int))
 total = 0
 
-for token in corpus:
-    if token.pos == VERB:
-        for argument in token.children:
-            if argument.dep_ in {"nsubj", "nsubjpass"}:
-                subjects[token.lemma_][argument.text] += 1
-                total += 1
-            elif argument.dep_ in {"dobj", "iobj", "pobj", "obj"}:
-                objects[token.lemma_][argument.text] += 1
-                total += 1
+# chunking text and parsing
+for i in range(0, MAX_LENGTH, CHUNK_LENGTH):
+    chunk = text[i:i + CHUNK_LENGTH]
+
+    # resolve entities and gramatically parse 
+    nlp = spacy.load("en")
+    neuralcoref.add_to_pipe(nlp)
+    entitied_text = nlp(chunk.lower())._.coref_resolved
+    corpus = nlp(entitied_text)
+
+    for token in corpus:
+        if token.pos == VERB:
+            for argument in token.children:
+                if argument.dep_ in {"nsubj", "nsubjpass"}:
+                    subjects[token.lemma_][argument.text] += 1
+                    total += 1
+                elif argument.dep_ in {"dobj", "iobj", "pobj", "obj"}:
+                    objects[token.lemma_][argument.text] += 1
+                    total += 1
+    
+    print("completed chunk ", int(i / CHUNK_LENGTH))
 
 verbs = set(subjects.keys()) | set(objects.keys())
 print("# of verbs: ", len(verbs))
@@ -98,6 +108,7 @@ print("marginal: ", marginal(event))
 print("coreference count of think/know: ", coreference["think"]["know"])
 print("coreference count of count/surpass: ", coreference["count"]["surpass"])
 
+"""
 event1 = ("think", "i", "subj")
 event2 = ("know", "i", "subj")
 print("\nevents: ", event1, event2)
@@ -108,6 +119,7 @@ event2 = ("skyrocket", "i", "subj")
 print("\nevents: ", event1, event2)
 print("joint probability of events: ", joint(event1, event2))
 print("pmi of events:", pmi(event1, event2))
+"""
 
 def predict(chain):
     scores = dict()

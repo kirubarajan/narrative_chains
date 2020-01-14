@@ -1,0 +1,1 @@
+mvn exec:java -Dexec.mainClass="edu.jhu.agiga.AgigaPrinter" -Dexec.args="words ../gigaword/nyt_eng_200901.xml.gz"
