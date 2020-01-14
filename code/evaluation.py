@@ -35,7 +35,8 @@ def score_predictions(test_pairs, document, embedding=False):
         position_score += position
     return position_score / len(test_pairs)
 
-"""NYT Annotated Chains"""
+
+"""
 # chains are hand-annotated from the input corpus, not the output of identified events (manually lemmatizing)
 chain0 = [Event("They", "predict", "uprising", "dobj"), Event("It", "cost", "100,000", "dobj"), Event("Police", "tip", "Taliban", "dobj")]
 chain1 = [Event("Michiganians", "contribute", "money", "dobj"), Event("Citizens", "give", "50k", "dobj")]
@@ -68,11 +69,20 @@ output11 = Event("He", "talk", "me", "dobj")
 output12 = Event("They", "buy", "things", "dobj")
 output13 = Event("Dries", "contribute", "250", "dobj")
 output14 = Event("NHTSA", "report", "complaints", "dobj")
+"""
 
-nyt_test_pairs = [(chain0, output0), (chain1, output1), (chain2, output2), (chain3, output3), (chain4, output4), (chain5, output5), (chain6, output6), (chain7, output7), (chain8, output8), (chain9, output9), (chain10, output10), (chain11, output11), (chain12, output12), (chain13, output13), (chain14, output14)]
+chain0 = [Event("predict", "uprising", "dobj"), Event("cost", "100,000", "dobj"), Event("tip", "Taliban", "dobj")]
+chain1 = [Event("contribute", "money", "dobj"), Event("give", "50k", "dobj")]
+
+output0 = Event("demand", "4,000", "dobj")
+output1 = Event("build", "majority", "dobj")
+
+# nyt_test_pairs = [(chain0, output0), (chain1, output1), (chain2, output2), (chain3, output3), (chain4, output4), (chain5, output5), (chain6, output6), (chain7, output7), (chain8, output8), (chain9, output9), (chain10, output10), (chain11, output11), (chain12, output12), (chain13, output13), (chain14, output14)]
+nyt_test_pairs = [(chain0, output0), (chain1, output1)]
 
 """Common Sense Reasoning Annotated Chains"""
-c_chain0 = [Event("I", "start", "game", "dobj"), Event("I", "play", "game", "dobj")]
-c_output0 = Event("I", "win", "game", "dobj")
+c_chain0 = [Event("start", "game", "dobj"), Event("play", "game", "dobj")]
+c_output0 = Event("win", "game", "dobj")
 
 common_sense_test_pairs = [(c_chain0, c_output0)]
+# common_sense_test_pairs = []

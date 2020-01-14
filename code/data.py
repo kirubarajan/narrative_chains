@@ -32,7 +32,13 @@ def build_loader(file_path):
 
 def export_events(document, file_path):
     with open(file_path, "w") as file:
-        for event in document.ordered_events:
+        for event in document.left_events:
+            file.write("\n")
+            file.write(str(event))
+            file.write(" ")
+            file.write(str(document.events[event]))
+
+        for event in document.right_events:
             file.write("\n")
             file.write(str(event))
             file.write(" ")

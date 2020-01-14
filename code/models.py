@@ -6,7 +6,8 @@ from pymagnitude import Magnitude
 """document class definition for managing corpus context"""
 class Document:
     def __init__(self):
-        self.subjects = set()
+        self.left_events = list()
+        self.right_events = list()
         self.verbs = set()
         self.dependencies = set()
         self.dependency_types = set()
@@ -15,17 +16,16 @@ class Document:
 
 """event class definition for tracking event arguments and pos tags"""
 class Event:
-    def __init__(self, subject, verb, dependency, dependency_type=None):
-        self.subject = subject
+    def __init__(self, verb, dependency, dependency_type=None):
         self.verb = verb
         self.dependency = dependency
         self.dependency_type = dependency_type
 
     def __str__(self):
-        return " ".join([self.subject, self.verb, self.dependency, self.dependency_type])
+        return " ".join([self.verb, self.dependency, self.dependency_type])
 
     def __hash__(self):
-        return hash(str(self.verb + " " + self.dependency_type))
+        return hash(str(self.verb + " " + self.dependency))
 
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
@@ -43,38 +43,42 @@ def count(event1, event2, document):
     return frequency
     """
 
+    """
     for event in document.events:
         if event.verb == event1.verb or event.verb == event2.verb:
             # todo: replace with coreferring entity id
             if event.dependency_type == event1.dependency_type and event.dependency_type == event2.dependency_type:
                 frequency += 1
+    """
+
+    for event in document.events:
+        if event.dependency == event1.dependency and event.dependency == event2.dependency:
+            frequency += document.events[event]
     return frequency
 
 """joint coreference probability (section 4)"""
 def joint_event_prob(event1, event2, document):
     # marginalizing over each verb/dependency pair
-    total = sum([document.events[x] for x in document.events])
-    """ 
-    for x in document.verbs:
-        for y in document.verbs:
-            for d in document.dependency_types:
-                for f in document.dependency_types:
-                    total += count(Event(None, x, None, d), Event(None, y, None, f), document)
     """
-    return count(event1, event2, document) / total
+    total = 0
+    for event in document.events:
+        if event.dependency == event1.dependency and event.dependency == event2.dependency:
+            total += document.events[event]
+    
+    if total == 0:
+        return 0
+    else:
+    """
+    return count(event1, event2, document) / document.total
 
 """coreference probability (section 4)"""
-def event_prob(event1, document):
-    count = 0
-    for event in document.events:
-        if event1 == event:
-            count += document.events[event]
-    return count / sum([document.events[x] for x in document.events])
+def event_prob(event, document):
+    return document.events[event] / document.total
 
 """pointwise mutual information approximation"""
 def pmi_approx(event1, event2, document):
     numerator = math.log(joint_event_prob(event1, event2, document) + 0.00000001)
-    denominator = math.log(event_prob(event1, document)) + math.log(event_prob(event2, document) + 0.000001)
+    denominator = math.log(event_prob(event1, document) + 0.000001) + math.log(event_prob(event2, document) + 0.000001)
     result = math.exp(numerator - math.exp(denominator)) 
     return math.log(result) if result > 0 else 0 
 
@@ -89,7 +93,8 @@ def predict_events(chain, document, n=None, embedding=False, include_ranks=False
         vectors = Magnitude("data/GoogleNews-vectors-negative300.magnitude")
 
     scores = dict()
-    for candidate in document.events:
+
+    for candidate in document.ordered_events:
         score = 0
         for event in chain:
             if embedding: similarity = vectors.similarity(candidate.verb, event.verb)

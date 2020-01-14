@@ -52,7 +52,8 @@ def parse_document(text, coref=False, lemma=False):
     
     corpus = nlp(text)
     document = Document()
-    
+
+    """
     # Finding a verb with a subject from below
     for possible_subject in corpus:
         if possible_subject.dep in {nsubj, nsubjpass} and possible_subject.head.pos == VERB:
@@ -69,4 +70,31 @@ def parse_document(text, coref=False, lemma=False):
                     document.dependency_types.add(dependent.dep_)
                     document.events[event] += 1
                     document.ordered_events.append(event)
+    """
+
+    for token in corpus:
+        if token.pos == VERB:
+            # print("\nverb: ", token.lemma_)
+            for argument in token.children:
+                if argument.dep_ in {"dobj", "iobj", "pobj", "obj", "nsubj", "nsubjpass"}:
+                    # print argument/types for debugging
+                    # if argument.dep_ in {"dobj", "iobj", "pobj", "obj"}: print("object: ", argument.text) 
+                    # elif argument.dep_ in {"nsubj", "nsubjpass"}: print("subject: ", argument.text)
+
+                    # update document state
+                    event = Event(token.lemma_, argument.text, argument.dep_)
+                    document.events[event] += 1
+                    document.verbs.add(token.text)
+                    document.ordered_events.append(event)
+                    document.dependencies.add(argument.text)
+                    document.dependency_types.add(argument.dep_)
+
+    for event in document.ordered_events:
+        if event.dependency_type in {"nsubj", "nsubjpass"}:
+            document.left_events.append(event)
+        else:
+            document.right_events.append(event)
+
+    document.total = sum([document.events[x] for x in document.events])
+
     return document

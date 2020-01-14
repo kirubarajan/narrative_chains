@@ -10,48 +10,47 @@ file_path = "data/agiga/export.txt"
 loader = build_loader(file_path)
 # loader.sanity_check()
 
-EMBEDDING = False
+EMBEDDING = True
 COREF = True
 EXAMPLE = "Kevin joined the army. He served the army. He then oversaw the army. Finally, he resigned from the navy." 
-MAX_LENGTH = 1000000
-# text = loader.get_text()[:MAX_LENGTH]
-text = EXAMPLE
+MAX_LENGTH = 10000
+text = loader.get_text()[:MAX_LENGTH]
+# text = EXAMPLE
 
 document = parse_document(text, coref=COREF, lemma=True)
 export_events(document, "events_export.txt")
 events = list(document.events.items())
 
+print("\nParsing Statistics: ")
+print("events: ", len(events))
+print("verbs: ", len(document.verbs))
+print("dependencies: ", len(document.dependencies))
+print("dependency types: ", len(document.dependency_types))
+
 def test_prior():
-    print("testing prior probability of each event")
-    for event, count in events:
+    print("\nTesting Prior Probability of Each Event")
+    for event in document.left_events:
         print(event, event_prob(event, document))
-    print(len(events), len(document.verbs), len(document.subjects), len(document.dependencies))  
 
+    for event in document.right_events:
+        print(event, event_prob(event, document))
+    
 def test_joint(): 
-    print("\ntesting joint probability of events")
-    event1, event2 = events[0][0], events[1][0]
-    print(event1, "|", event2, "|", joint_event_prob(event1, event2, document))
-
-    event1, event2 = events[1][0], events[2][0]
-    print(event1, "|", event2, "|", joint_event_prob(event1, event2, document))
-
-    event1, event2 = events[2][0], events[0][0]
-    print(event1, "|", event2, "|", joint_event_prob(event1, event2, document))
+    print("\nTesting Joint Probability of Events")
+    
+    for i in range(len(document.left_events) - 1):
+        event1, event2 = document.left_events[i], document.left_events[i + 1]
+        print(event1, event2, joint_event_prob(event1, event2, document))
 
 def test_pmi():
     print("\ntesting pointwise mutual information approximation of events")
-    event1, event2 = events[0][0], events[1][0]
-    print(event1, "|", event2, "|", pmi_approx(event1, event2, document))
-
-    event1, event2 = events[1][0], events[2][0]
-    print(event1, "|", event2, "|", pmi_approx(event1, event2, document))
-
-    event1, event2 = events[2][0], events[0][0]
-    print(event1, "|", event2, "|", pmi_approx(event1, event2, document))
+    for i in range(len(document.left_events) - 1):
+        event1, event2 = document.left_events[i], document.left_events[i + 1]
+        print(event1, event2, pmi_approx(event1, event2, document))
 
 def test_prediction():
     print("\nTesting Event Prediction")
-    event1, event2 = Event("Somebody", "joined", "navy", "dobj"), Event("Somebody", "served", "navy", "dobj")
+    event1, event2 = Event("join", "somebody", "nsubj"), Event("serve", "somebody", "nsubj")
     chain = [event1, event2]
     # print(event_prob(event1, document))
     # print(event_prob(event2, document))
@@ -67,7 +66,7 @@ def test_prediction():
         print(prediction.verb, prediction.dependency_type, score)
 
     print("\nTesting Greedy Chain Generation")
-    chain = [Event("I", "play", "game", "dobj")]
+    chain = [Event("know", "I", "nsubj")]
     print("seed event: ", chain[0])
     for i in range(3):
         prediction = predict_events(chain, document, n=1, embedding=EMBEDDING)[0]
@@ -87,8 +86,8 @@ def test_cloze():
     print("model position average: ", accuracy)
 
 """Test Runner"""
-test_prior()
-test_joint()
-test_pmi()
+# test_prior() 
+# test_joint()
+# test_pmi()
 test_prediction()
 test_cloze()
