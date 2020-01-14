@@ -75,6 +75,12 @@ loader = build_loader(file_path)
 loader.sanity_check()
 ```
 
+Raw text from Gigaword can be extracted using the `agiga` package through Maven:
+
+```
+mvn exec:java -Dexec.mainClass="edu.jhu.agiga.AgigaPrinter" -Dexec.args="words ../gigaword/nyt_eng_200901.xml.gz"
+```
+
 ## Testing and Evaluation
 Testing can be performed by running `python code/test.py`. For the example text of `"Kevin joined the army. Kevin served the army. Kevin oversaw the army."`, the output yields:
 
