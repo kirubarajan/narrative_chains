@@ -4,6 +4,8 @@ import spacy
 from collections import defaultdict
 from spacy.symbols import nsubj, nsubjpass, VERB
 
+print("Running Narrative Chain Indexing")
+
 # set constants
 INPUT_FILE = "data/input1.txt"
 OUTPUT_FILE = "export.txt"
