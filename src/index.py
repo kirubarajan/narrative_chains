@@ -7,18 +7,15 @@ from spacy.symbols import nsubj, nsubjpass, VERB
 # set constants
 INPUT_FILE = "data/input1.txt"
 OUTPUT_FILE = "export.txt"
-MAX_LENGTH = 1_000_000
+MAX_LENGTH = 2_000_000
 CHUNK_LENGTH = 100_000
 
-##### TODO: chunk and support multiple files
-# clean data
-# loader = build_loader(INPUT_FILE)
-# text = loader.get_text()[:MAX_LENGTH] 
-
+# read file and clean input
 with open(INPUT_FILE) as f:
     text = " ".join(f.readlines()[13:-7])
 
 # identify events
+ordered = list()
 subjects = defaultdict(lambda: defaultdict(int))
 objects = defaultdict(lambda: defaultdict(int))
 total = 0
@@ -26,6 +23,7 @@ total = 0
 # chunking text and parsing
 for i in range(0, MAX_LENGTH, CHUNK_LENGTH):
     chunk = text[i:i + CHUNK_LENGTH]
+    print("chunk ", int(i / CHUNK_LENGTH))
 
     # resolve entities and gramatically parse 
     nlp = spacy.load("en")
@@ -39,11 +37,11 @@ for i in range(0, MAX_LENGTH, CHUNK_LENGTH):
                 if argument.dep_ in {"nsubj", "nsubjpass"}:
                     subjects[token.lemma_][argument.text] += 1
                     total += 1
+                    ordered.append((token.lemma_, argument.text, argument.dep_))
                 elif argument.dep_ in {"dobj", "iobj", "pobj", "obj"}:
                     objects[token.lemma_][argument.text] += 1
                     total += 1
-    
-    print("completed chunk ", int(i / CHUNK_LENGTH))
+                    ordered.append((token.lemma_, argument.text, argument.dep_))
 
 verbs = set(subjects.keys()) | set(objects.keys())
 print("# of verbs: ", len(verbs))
@@ -68,14 +66,8 @@ for verb1 in verbs:
 
 # write events to output file
 with open(OUTPUT_FILE, "w") as file:
-    for verb in verbs:
-        for subj in subjects[verb]:
-            file.write("\n")
-            file.write(verb + " " + subj + " " + "subj")
-
-        for obj in objects[verb]:
-            file.write("\n")
-            file.write(verb + " " + obj + " " + "obj")
+    for event in ordered:
+        file.write("\n" + str(event))
 
 # marginal probability of event: P(e)
 def marginal(event):
@@ -91,36 +83,15 @@ def joint(event1, event2):
 # pointwise mutual information approximation of two events
 def pmi(event1, event2):
     numerator = joint(event1, event2)
-    denominator = math.exp(math.log(marginal(event1)) + math.log(marginal(event2)))
-    return 0.0 if numerator == 0 else math.log(numerator / denominator)
+    marginal1, marginal2 = marginal(event1), marginal(event2)
+    if marginal1 == 0 or marginal2 == 0 or numerator == 0: return 0.0
+
+    denominator = math.exp(math.log(marginal1) + math.log(marginal2))
+    return math.log(numerator / denominator)
 
 print("total coreference count: ", total_coreference)
 
-# testing random things
-event = ("say", "somebody", "subj")
-print("\nevent: ", event)
-print("marginal: ", marginal(event))
-
-event = ("think", "i", "subj")
-print("\nevent: ", event)
-print("marginal: ", marginal(event))
-
-print("coreference count of think/know: ", coreference["think"]["know"])
-print("coreference count of count/surpass: ", coreference["count"]["surpass"])
-
-"""
-event1 = ("think", "i", "subj")
-event2 = ("know", "i", "subj")
-print("\nevents: ", event1, event2)
-print("joint probability of events: ", joint(event1, event2))
-print("pmi of events:", pmi(event1, event2))
-
-event2 = ("skyrocket", "i", "subj")
-print("\nevents: ", event1, event2)
-print("joint probability of events: ", joint(event1, event2))
-print("pmi of events:", pmi(event1, event2))
-"""
-
+# chain prediction
 def predict(chain):
     scores = dict()
     for verb in verbs:
@@ -141,7 +112,38 @@ def predict(chain):
     ranked_scores = sorted(list(cleaned_scores.items()), key=lambda x: x[1], reverse=True)
     return ranked_scores
 
-chain = [("be", "Townley", "subj"), ("say", "Townley", "subj")]
-prediction = predict(chain)[0]
-print("\nchain: ", chain)
-print("prediction (and score): ", prediction)
+# testing narrative cloze
+testing_pairs = [
+    ([("receive", "clients", "nsubj"), ("download", "clients", "dobj")], ("make", "clients", "nsubj")),
+    ([("fled", "gelman", "nsubj"), ("found", "gelman", "nsubj")], ("take", "gelman", "nsubj")),
+    ([("am", "i", "nsubj"), ("did", "i", "nsubj"), ("think", "i", "nsubj")], ('believe', "i", "nsubj")),
+    ([("bought", "team", "dobj"), ("included", "team", "dobj")], ("take", "team", "nsubj")),
+    ([("heard", "parents", "nsubj"), ("talking", "parents", "nsubj")], ("choose", "parents", "nsubj")),
+    ([("buy", 'stock', 'dobj'), ("lend", 'money', 'dobj')], ("struggle", 'edison', 'nsubj')),
+    ([("advocated", 'league', 'nsubj'), ("fought", 'league', 'nsubj')], ("withdraw", 'league', 'nsubj')),
+    ([("was", 'cranston', 'nsubj'), ("spent", 'cranston', 'nsubj'), ("fight", 'cranston', 'nsubj')], ("raise", 'cranston', 'nsubj')),
+    ([("have", 'administration', 'nsubj'), ("convinced", 'administration', 'nsubj'), ("look", 'administration', 'nsubj')], ("push", 'administration', 'nsubj')),
+    ([('hug', 'father', 'dobj'), ('tell', 'father', 'dobj')], ('love', 'father', 'dobj')),
+    ([('be', 'i', 'nsubj'), ('get', 'i', 'nsubj'), ('have', 'i', 'nsubj')], ('call', 'i', 'nsubj'))
+]
+
+def get_position(predictions, correct):
+    for i in range(len(predictions)):
+        if predictions[i][0] == correct[0]:
+            return i + 1
+    return len(predictions)
+
+print("\nNarrative Cloze Positions: ")
+positions = list()
+for chain, correct in testing_pairs:
+    predictions = predict(chain)
+    position = get_position(predictions, correct)
+    positions.append(position)
+    print("position: ", position)
+
+# computing averages
+average = sum(positions) / len(positions)
+print("\naverage position: ", average)
+
+adjusted_average = sum([x for x in positions if x != len(verbs)]) / len([x for x in positions if x != len(verbs)])
+print("adjusted average position: ", adjusted_average)
