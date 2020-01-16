@@ -4,7 +4,6 @@ import math
 import neuralcoref
 import spacy
 from collections import defaultdict
-from spacy.symbols import nsubj, nsubjpass, VERB
 
 if len(sys.argv) == 2 and sys.argv[1] == "--train":
     print("\nRunning Narrative Chain Indexing")
@@ -12,8 +11,8 @@ if len(sys.argv) == 2 and sys.argv[1] == "--train":
     # set constants
     INPUT_FILE = "data/input1.txt"
     OUTPUT_FILE = "export.txt"
-    MAX_LENGTH = 50_000
-    CHUNK_LENGTH = 10_000
+    MAX_LENGTH = 500_000
+    CHUNK_LENGTH = 100_000
 
     # read file and clean input
     with open(INPUT_FILE) as f:
@@ -26,27 +25,34 @@ if len(sys.argv) == 2 and sys.argv[1] == "--train":
     total = 0
 
     # chunking text and parsing
+    spacy.prefer_gpu()
+    
     for i in range(0, MAX_LENGTH, CHUNK_LENGTH):
         chunk = text[i:i + CHUNK_LENGTH]
-        print("chunk ", int(i / CHUNK_LENGTH))
+        print("\nchunk ", int(i / CHUNK_LENGTH))
 
         # resolve entities and gramatically parse 
+        print("parsing chunk")
         nlp = spacy.load("en")
         neuralcoref.add_to_pipe(nlp)
-        entitied_text = nlp(chunk.lower())._.coref_resolved
-        corpus = nlp(entitied_text)
+        corpus = nlp(chunk)
 
+        print("mining events")
         for token in corpus:
-            if token.pos == VERB:
+            if token.pos == spacy.symbols.VERB:
                 for argument in token.children:
+                    # resolve argument coreference entity
+                    if argument._.in_coref: esolved = argument._.coref_clusters[0].main.text
+                    else: resolved = argument.text
+
                     if argument.dep_ in {"nsubj", "nsubjpass"}:
-                        subjects[token.lemma_][argument.text] += 1
+                        subjects[token.lemma_.lower()][argument.text.lower()] += 1
+                        ordered.append((token.lemma_, resolved.lower(), argument.dep_))
                         total += 1
-                        ordered.append((token.lemma_, argument.text, argument.dep_))
                     elif argument.dep_ in {"dobj", "iobj", "pobj", "obj"}:
-                        objects[token.lemma_][argument.text] += 1
+                        objects[token.lemma_.lower()][argument.text.lower()] += 1
+                        ordered.append((token.lemma_, resolved.lower(), argument.dep_))
                         total += 1
-                        ordered.append((token.lemma_, argument.text, argument.dep_))
 
     verbs = set(subjects.keys()) | set(objects.keys())
     print("total verb count: ", len(verbs))
