@@ -1,75 +1,101 @@
+import sys
+import pickle
 import math
 import neuralcoref
 import spacy
 from collections import defaultdict
 from spacy.symbols import nsubj, nsubjpass, VERB
 
-print("Running Narrative Chain Indexing")
+if len(sys.argv) == 2 and sys.argv[1] == "--train":
+    print("\nRunning Narrative Chain Indexing")
 
-# set constants
-INPUT_FILE = "data/input1.txt"
-OUTPUT_FILE = "export.txt"
-MAX_LENGTH = 2_000_000
-CHUNK_LENGTH = 100_000
+    # set constants
+    INPUT_FILE = "data/input1.txt"
+    OUTPUT_FILE = "export.txt"
+    MAX_LENGTH = 50_000
+    CHUNK_LENGTH = 10_000
 
-# read file and clean input
-with open(INPUT_FILE) as f:
-    text = " ".join(f.readlines()[13:-7])
+    # read file and clean input
+    with open(INPUT_FILE) as f:
+        text = " ".join(f.readlines()[13:-7])
 
-# identify events
-ordered = list()
-subjects = defaultdict(lambda: defaultdict(int))
-objects = defaultdict(lambda: defaultdict(int))
-total = 0
+    # identify events
+    ordered = list()
+    subjects = defaultdict(lambda: defaultdict(int))
+    objects = defaultdict(lambda: defaultdict(int))
+    total = 0
 
-# chunking text and parsing
-for i in range(0, MAX_LENGTH, CHUNK_LENGTH):
-    chunk = text[i:i + CHUNK_LENGTH]
-    print("chunk ", int(i / CHUNK_LENGTH))
+    # chunking text and parsing
+    for i in range(0, MAX_LENGTH, CHUNK_LENGTH):
+        chunk = text[i:i + CHUNK_LENGTH]
+        print("chunk ", int(i / CHUNK_LENGTH))
 
-    # resolve entities and gramatically parse 
-    nlp = spacy.load("en")
-    neuralcoref.add_to_pipe(nlp)
-    entitied_text = nlp(chunk.lower())._.coref_resolved
-    corpus = nlp(entitied_text)
+        # resolve entities and gramatically parse 
+        nlp = spacy.load("en")
+        neuralcoref.add_to_pipe(nlp)
+        entitied_text = nlp(chunk.lower())._.coref_resolved
+        corpus = nlp(entitied_text)
 
-    for token in corpus:
-        if token.pos == VERB:
-            for argument in token.children:
-                if argument.dep_ in {"nsubj", "nsubjpass"}:
-                    subjects[token.lemma_][argument.text] += 1
-                    total += 1
-                    ordered.append((token.lemma_, argument.text, argument.dep_))
-                elif argument.dep_ in {"dobj", "iobj", "pobj", "obj"}:
-                    objects[token.lemma_][argument.text] += 1
-                    total += 1
-                    ordered.append((token.lemma_, argument.text, argument.dep_))
+        for token in corpus:
+            if token.pos == VERB:
+                for argument in token.children:
+                    if argument.dep_ in {"nsubj", "nsubjpass"}:
+                        subjects[token.lemma_][argument.text] += 1
+                        total += 1
+                        ordered.append((token.lemma_, argument.text, argument.dep_))
+                    elif argument.dep_ in {"dobj", "iobj", "pobj", "obj"}:
+                        objects[token.lemma_][argument.text] += 1
+                        total += 1
+                        ordered.append((token.lemma_, argument.text, argument.dep_))
 
-verbs = set(subjects.keys()) | set(objects.keys())
-print("# of verbs: ", len(verbs))
+    verbs = set(subjects.keys()) | set(objects.keys())
+    print("total verb count: ", len(verbs))
 
-# create coreference matrix
-coreference = defaultdict(lambda: defaultdict(int))
-total_coreference = 0
+    # create coreference matrix
+    print("\nComputing Coreference Matrix")
 
-for verb1 in verbs:
-    for verb2 in verbs:
-        verb1_subjects = set(subjects[verb1].keys())
-        for argument in subjects[verb2]:
-            if argument in verb1_subjects:
-                coreference[verb1][verb2] += 1
-                total_coreference += 1
+    coreference = defaultdict(lambda: defaultdict(int))
+    total_coreference = 0
 
-        verb1_objects = set(objects[verb1].keys())
-        for argument in objects[verb2]:
-            if argument in verb1_objects:
-                coreference[verb1][verb2] += 1
-                total_coreference += 1
+    for verb1 in verbs:
+        for verb2 in verbs:
+            verb1_subjects = set(subjects[verb1].keys())
+            for argument in subjects[verb2]:
+                if argument in verb1_subjects:
+                    coreference[verb1][verb2] += 1
+                    total_coreference += 1
 
-# write events to output file
-with open(OUTPUT_FILE, "w") as file:
-    for event in ordered:
-        file.write("\n" + str(event))
+            verb1_objects = set(objects[verb1].keys())
+            for argument in objects[verb2]:
+                if argument in verb1_objects:
+                    coreference[verb1][verb2] += 1
+                    total_coreference += 1
+
+    print("total coreference count: ", total_coreference)
+
+    # write events to output file
+    with open(OUTPUT_FILE, "w") as file:
+        for event in ordered:
+            file.write("\n" + str(event))
+
+    # TODO: pickle subjects, objects, coreference, total
+    class Model: pass
+    model = Model()
+    model.subjects, model.objects, model.coreference = dict(subjects), dict(objects), dict(coreference)
+    model.total, model.total_coreference = total, total_coreference
+
+    print("\nDumping Model")
+    with open("model.pickle", "wb") as file:
+        pickle.dump(model, file)
+    print("successfully saved to model.pickle")
+
+else:
+    with open("model.pickle", "rb") as file:
+        class Model: pass
+        model = pickle.load(file)
+        total, total_coreference = model.total, model.total_coreference
+        subjects, objects, coreference = defaultdict(lambda: defaultdict(int), model.subjects), defaultdict(lambda: defaultdict(int), model.objects), defaultdict(lambda: defaultdict(int), model.coreference)
+        verbs = set(subjects.keys()) | set(objects.keys())
 
 # marginal probability of event: P(e)
 def marginal(event):
@@ -90,8 +116,6 @@ def pmi(event1, event2):
 
     denominator = math.exp(math.log(marginal1) + math.log(marginal2))
     return math.log(numerator / denominator)
-
-print("total coreference count: ", total_coreference)
 
 # chain prediction
 def predict(chain):
@@ -135,7 +159,7 @@ def get_position(predictions, correct):
             return i + 1
     return len(predictions)
 
-print("\nNarrative Cloze Positions: ")
+print("\nEvaluating Narrative Cloze Positions: ")
 positions = list()
 for chain, correct in testing_pairs:
     predictions = predict(chain)
