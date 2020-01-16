@@ -6,3 +6,4 @@ src/__pycache__
 data/GoogleNews-vectors-negative300.magnitude
 export.txt
 input.txt
+model.pickle
