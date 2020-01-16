@@ -7,3 +7,4 @@ data/GoogleNews-vectors-negative300.magnitude
 export.txt
 input.txt
 model.pickle
+.vscode/
