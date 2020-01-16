@@ -46,7 +46,7 @@ The following libraries are used throughout the study:
 2. SpaCy Dependency Parser (`spacy`)
 3. HuggingFace Neural Coreference Resolution (`neuralcoref`)
 
-Future work and extensions include:
+Extensions include:
 1. Magnitude Embedding Library (`pymagnitude`)
 2. Word2Vec Google-News Word Embedding Model 
 
@@ -135,7 +135,7 @@ position:  2118
 average position:  1244.6363636363637
 ```
 
-## Changelog 
+## Implementation Notes 
 - verb space too large -> lemmatizing verbs before parsing
 - events are similar to themselves -> removing seen verbs in chain from prediction candidates
 - coreference resolution fails occasionally -> increase chunk size
