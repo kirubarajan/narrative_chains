@@ -6,7 +6,8 @@ An updated implementation of *Unsupervised Learning of Narrative Event Chains* b
 ## Quickstart
 1. Install dependencies with `pip install -r requirements.txt`
 2. Download spaCy model with `python install -m spacy en`
-3. Run project by calling `python src/index.py` to use pickled model (optional `--train` flag to train and save model)
+3. Train model and evaluate by calling `python src/index.py --train`
+4. (Optional) Evaluate pre-existing model by calling `python src/index.py`
 
 ## Examples
 Examples of identified narrative events in the format `(subject, verb, dependency, dependency_type, probability)`:
