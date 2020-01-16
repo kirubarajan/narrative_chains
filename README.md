@@ -138,7 +138,9 @@ average position:  1244.6363636363637
 ## Changelog 
 - verb space too large -> lemmatizing verbs before parsing
 - events are similar to themselves -> removing seen verbs in chain from prediction candidates
-- coreference fails occasionally -> increase chunk size
+- coreference resolution fails occasionally -> increase chunk size
+- parsing is slow -> single grammatical pass and resolve entities ad-hoc
+- coreference count computation is slow -> refactor to matrix implementation
 
 ## License
 MIT License
