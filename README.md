@@ -9,6 +9,8 @@ An updated implementation of *Unsupervised Learning of Narrative Event Chains* b
 3. Train model and evaluate by calling `python src/index.py --train`
 4. (Optional) Evaluate pre-existing model by calling `python src/index.py`
 
+Disclaimer: the `neuralcoref` package has issues in certain architectures. These issues can be resolved by uninstalling the package and re-installing from distribution source using `pip install neuralcoref --no-binary neuralcoref`.
+
 ## Examples
 Examples of identified narrative events in the format `(subject, verb, dependency, dependency_type, probability)`:
 
