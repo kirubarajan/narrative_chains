@@ -1,100 +1,64 @@
-"""Script for parsing plaintext for linguistic features"""
-from collections import defaultdict
-import stanfordnlp
-import spacy
 import neuralcoref
-from spacy.symbols import nsubj, nsubjpass, VERB
-from models import Event, Document
+import spacy
+from collections import defaultdict
 
-"""Dependency Parsing and Coreference Resolution using Stanford NLP Package"""
-def parse_stanford():
-    nlp = stanfordnlp.Pipeline(processors='tokenize,mwt,pos,lemma,depparse', lang='en')
-    doc = nlp(EXAMPLE)
+# identify events
+ordered = list()
+subjects = defaultdict(lambda: defaultdict(int))
+objects = defaultdict(lambda: defaultdict(int))
+total = 0
 
-    for sentence in doc.sentences:
-        for word in sentence.words:
-            print(word.pos, word.text, "->", word. dependency_relation, sentence.words[word.governor - 1].text if word.governor > 0 else 'root')
-            
-            if word.pos == "VBD":
-                verb, argument = word.text, sentence.words[word.governor - 1].text if word.governor > 0 else 'root'
-                event = Event(verb, argument)
-                events.add(event)
-                print(event)
-    print(events)
+# chunking text and parsing
+spacy.prefer_gpu()
 
-"""Parsing POS and Chunking using SpaCy"""
-def parse_syntax():
-    nlp = spacy.load("en_core_web_sm")
-    doc = nlp(EXAMPLE)
+for i in range(0, MAX_LENGTH, CHUNK_LENGTH):
+    chunk = text[i:i + CHUNK_LENGTH]
+    print("\nchunk ", int(i / CHUNK_LENGTH))
 
-    for token in doc:
-        if not token.is_stop and token.dep_ != "punct":
-            if token.tag_ == "VBD":
-                print("VERB: " + token.text)
-            print(token.text, token.dep_, token.tag_)
-
-    for chunk in doc.noun_chunks:
-        print(chunk.text, chunk.root.text, chunk.root.dep_, chunk.root.head.text)
-
-        if chunk.root.head.pos_ == "VERB":
-            print(chunk.text, chunk.root.head.text, chunk.root.pos_)
-            print("HEAD VERB", chunk.root.head.text, chunk.root.head.pos_)
-
-"""Dependency Parsing and Coreference Resolution using SpaCy Package"""
-"""Returns a Document object containing a frequency dictionary of type Event -> integer"""
-def parse_document(text, coref=False, lemma=False):
+    # resolve entities and gramatically parse 
+    print("parsing chunk")
     nlp = spacy.load("en")
+    neuralcoref.add_to_pipe(nlp)
+    corpus = nlp(chunk)
 
-    # if coreference resolution is on, then set corpus to be resolved text
-    if coref: 
-        neuralcoref.add_to_pipe(nlp)
-        text = nlp(text)._.coref_resolved
-    
-    corpus = nlp(text)
-    document = Document()
-
-    """
-    # Finding a verb with a subject from below
-    for possible_subject in corpus:
-        if possible_subject.dep in {nsubj, nsubjpass} and possible_subject.head.pos == VERB:
-            for dependent in possible_subject.head.children:
-                if dependent.dep_ in {"dobj", "iobj", "pobj", "obj"}:
-                    if lemma:
-                        verb = possible_subject.head.lemma_
-                    else:
-                        verb = possible_subject.head.text
-                    event = Event(possible_subject.text, verb, dependent.text, dependent.dep_)
-                    document.verbs.add(verb)
-                    document.subjects.add(possible_subject.text)
-                    document.dependencies.add(dependent.text)
-                    document.dependency_types.add(dependent.dep_)
-                    document.events[event] += 1
-                    document.ordered_events.append(event)
-    """
-
+    print("mining events")
     for token in corpus:
-        if token.pos == VERB:
-            # print("\nverb: ", token.lemma_)
+        if token.pos == spacy.symbols.VERB:
             for argument in token.children:
-                if argument.dep_ in {"dobj", "iobj", "pobj", "obj", "nsubj", "nsubjpass"}:
-                    # print argument/types for debugging
-                    # if argument.dep_ in {"dobj", "iobj", "pobj", "obj"}: print("object: ", argument.text) 
-                    # elif argument.dep_ in {"nsubj", "nsubjpass"}: print("subject: ", argument.text)
+                # resolve argument coreference entity
+                if argument._.in_coref: esolved = argument._.coref_clusters[0].main.text
+                else: resolved = argument.text
 
-                    # update document state
-                    event = Event(token.lemma_, argument.text, argument.dep_)
-                    document.events[event] += 1
-                    document.verbs.add(token.text)
-                    document.ordered_events.append(event)
-                    document.dependencies.add(argument.text)
-                    document.dependency_types.add(argument.dep_)
+                if argument.dep_ in {"nsubj", "nsubjpass"}:
+                    subjects[token.lemma_.lower()][argument.text.lower()] += 1
+                    ordered.append((token.lemma_, resolved.lower(), argument.dep_))
+                    total += 1
+                elif argument.dep_ in {"dobj", "iobj", "pobj", "obj"}:
+                    objects[token.lemma_.lower()][argument.text.lower()] += 1
+                    ordered.append((token.lemma_, resolved.lower(), argument.dep_))
+                    total += 1
 
-    for event in document.ordered_events:
-        if event.dependency_type in {"nsubj", "nsubjpass"}:
-            document.left_events.append(event)
-        else:
-            document.right_events.append(event)
+verbs = set(subjects.keys()) | set(objects.keys())
+print("total verb count: ", len(verbs))
 
-    document.total = sum([document.events[x] for x in document.events])
+# create coreference matrix
+print("\nComputing Coreference Matrix")
 
-    return document
+coreference = defaultdict(lambda: defaultdict(int))
+total_coreference = 0
+
+for verb1 in verbs:
+    for verb2 in verbs:
+        verb1_subjects = set(subjects[verb1].keys())
+        for argument in subjects[verb2]:
+            if argument in verb1_subjects:
+                coreference[verb1][verb2] += 1
+                total_coreference += 1
+
+        verb1_objects = set(objects[verb1].keys())
+        for argument in objects[verb2]:
+            if argument in verb1_objects:
+                coreference[verb1][verb2] += 1
+                total_coreference += 1
+
+print("total coreference count: ", total_coreference)

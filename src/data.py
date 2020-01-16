@@ -1,45 +1,19 @@
-"""Module for loading plaintext data"""
+# read file and clean input
+with open(INPUT_FILE) as f:
+    text = " ".join(f.readlines()[13:-7])
 
-class DataLoader:
-    def __init__(self, path):
-        self.path = path
-        with open(path) as f:
-            self.text = f.read()  
-        self.get_lines
+# write events to output file
+with open(OUTPUT_FILE, "w") as file:
+    for event in ordered:
+        file.write("\n" + str(event))
 
-    """removes execution metatdata from plaintext"""
-    def clean_agiga_text(self):
-        self.text = " ".join(self.get_lines()[13:-7])
+# TODO: pickle subjects, objects, coreference, total
+class Model: pass
+model = Model()
+model.subjects, model.objects, model.coreference = dict(subjects), dict(objects), dict(coreference)
+model.total, model.total_coreference = total, total_coreference
 
-    def get_text(self):
-        return self.text
-
-    def get_lines(self):
-        lines = self.text.split("\n")
-        self.lines = lines
-        return self.lines
-
-    def sanity_check(self):
-        print(self.get_text()[:200], self.get_text()[-200:])
-
-    def __len__(self):
-        return len(self.lines)
-
-def build_loader(file_path):
-    loader = DataLoader(file_path)
-    loader.clean_agiga_text()
-    return loader
-
-def export_events(document, file_path):
-    with open(file_path, "w") as file:
-        for event in document.left_events:
-            file.write("\n")
-            file.write(str(event))
-            file.write(" ")
-            file.write(str(document.events[event]))
-
-        for event in document.right_events:
-            file.write("\n")
-            file.write(str(event))
-            file.write(" ")
-            file.write(str(document.events[event]))
+print("\nDumping Model")
+with open("model.pickle", "wb") as file:
+    pickle.dump(model, file)
+print("successfully saved to model.pickle")
