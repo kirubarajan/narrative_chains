@@ -11,7 +11,7 @@ if len(sys.argv) == 2 and sys.argv[1] == "--train":
     # set constants
     INPUT_FILE = "data/input1.txt"
     OUTPUT_FILE = "export.txt"
-    MAX_LENGTH = 500_000
+    MAX_LENGTH = 2_000_000
     CHUNK_LENGTH = 100_000
 
     # read file and clean input
@@ -55,7 +55,7 @@ if len(sys.argv) == 2 and sys.argv[1] == "--train":
                         total += 1
 
     verbs = set(subjects.keys()) | set(objects.keys())
-    print("total verb count: ", len(verbs))
+    print("\n total verb count: ", len(verbs))
 
     # create coreference matrix
     print("\nComputing Coreference Matrix")
