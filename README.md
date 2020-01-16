@@ -134,8 +134,9 @@ average position:  1244.6363636363637
 ```
 
 ## Changelog 
-- lemmatizing verbs before parsing
-- removing seen verbs in chain from prediction candidates
+- verb space too large -> lemmatizing verbs before parsing
+- events are similar to themselves -> removing seen verbs in chain from prediction candidates
+- coreference fails occasionally -> increase chunk size
 
 ## License
 MIT License
