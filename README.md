@@ -3,6 +3,11 @@
 
 An updated implementation of *Unsupervised Learning of Narrative Event Chains* by Chambers and Jurafsky (2008) as part of an independent study project at the University of Pennsylvania, Fall 2019. The overall goal of the project is to learn discrete representations of narrative knowledge through **Narrative Events** and orderings known as **Narrative Chains**. From the paper: "Since we  are  focusing  on  a  single  actor  in  this  study,  a narrative event is thus a tuple of the event and the typed dependency of the protagonist". 
 
+## Quickstart
+1. Install dependencies with `pip install -r requirements.txt`
+2. Download spaCy model with `python install -m spacy en`
+3. Run project by calling `python src/index.py` to use pickled model (optional `--train` flag to train and save model)
+
 ## Examples
 Examples of identified narrative events in the format `(subject, verb, dependency, dependency_type, probability)`:
 
