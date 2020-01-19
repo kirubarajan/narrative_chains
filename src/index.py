@@ -4,15 +4,17 @@ import math
 import neuralcoref
 import spacy
 from collections import defaultdict
+from pymagnitude import Magnitude
 
-if len(sys.argv) == 2 and sys.argv[1] == "--train":
+# set constants
+INPUT_FILE = "data/input1.txt"
+OUTPUT_FILE = "export.txt"
+MAX_LENGTH = 2_000_000
+CHUNK_LENGTH = 100_000
+EMBEDDING = "--embedding" in sys.argv
+
+if "--train" in sys.argv:
     print("\nRunning Narrative Chain Indexing")
-
-    # set constants
-    INPUT_FILE = "data/input1.txt"
-    OUTPUT_FILE = "export.txt"
-    MAX_LENGTH = 2_000_000
-    CHUNK_LENGTH = 100_000
 
     # read file and clean input
     with open(INPUT_FILE) as f:
@@ -124,12 +126,16 @@ def pmi(event1, event2):
     return math.log(numerator / denominator)
 
 # chain prediction
-def predict(chain):
+def predict(chain, embedding=False):
+    if embedding:
+        vectors = Magnitude('GoogleNews-vectors-negative300.magnitude')
+
     scores = dict()
     for verb in verbs:
         score = 0
         for event in chain:
-            score += pmi(event, (verb, None, None))
+            if embedding: score += vectors.similarity(event[0], verb)
+            else: score += pmi(event, (verb, None, None))
         scores[verb] = score
 
     cleaned_scores = dict()
@@ -168,7 +174,7 @@ def get_position(predictions, correct):
 print("\nEvaluating Narrative Cloze Positions: ")
 positions = list()
 for chain, correct in testing_pairs:
-    predictions = predict(chain)
+    predictions = predict(chain, embedding=EMBEDDING)
     position = get_position(predictions, correct)
     positions.append(position)
     print("position: ", position)
