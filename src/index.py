@@ -12,6 +12,7 @@ OUTPUT_FILE = "export.txt"
 MAX_LENGTH = 2_000_000
 CHUNK_LENGTH = 100_000
 EMBEDDING = "--embedding" in sys.argv
+ALPHA = 0.25
 
 if "--train" in sys.argv:
     print("\nRunning Narrative Chain Indexing")
@@ -126,8 +127,8 @@ def pmi(event1, event2):
     return math.log(numerator / denominator)
 
 # chain prediction
-def predict(chain, embedding=False):
-    if embedding:
+def predict(chain, embedding=False, interpolation=False):
+    if embedding or interpolation:
         vectors = Magnitude('GoogleNews-vectors-negative300.magnitude')
 
     scores = dict()
@@ -135,6 +136,7 @@ def predict(chain, embedding=False):
         score = 0
         for event in chain:
             if embedding: score += vectors.similarity(event[0], verb)
+            elif interpolation: score += (ALPHA * vectors.similarity(event[0], verb) + (1 - ALPHA) * pmi(event, (verb, None, None)))
             else: score += pmi(event, (verb, None, None))
         scores[verb] = score
 
@@ -172,16 +174,27 @@ def get_position(predictions, correct):
     return len(predictions)
 
 print("\nEvaluating Narrative Cloze Positions: ")
-positions = list()
-for chain, correct in testing_pairs:
-    predictions = predict(chain, embedding=EMBEDDING)
-    position = get_position(predictions, correct)
-    positions.append(position)
-    print("position: ", position)
+def run_evaluation(testing_pairs, embedding, interpolation):
+    if embedding: print("\nembedding model: ")
+    elif interpolation: print("\ninterpolated model: ")
+    else: print("\npmi model: ")
 
-# computing averages
-average = sum(positions) / len(positions)
-print("\naverage position: ", average)
+    positions = list()
+    for chain, correct in testing_pairs:
+        predictions = predict(chain, embedding=embedding, interpolation=interpolation)
+        position = get_position(predictions, correct)
+        positions.append(position)
+        print("position: ", position)
 
-adjusted_average = sum([x for x in positions if x != len(verbs)]) / len([x for x in positions if x != len(verbs)])
-print("adjusted average position: ", adjusted_average)
+    # computing averages
+    average = sum(positions) / len(positions)
+    print("\naverage position: ", average)
+
+    adjusted_average = sum([x for x in positions if x != len(verbs)]) / len([x for x in positions if x != len(verbs)])
+    print("adjusted average position: ", adjusted_average)
+
+run_evaluation(testing_pairs, False, False)
+
+if EMBEDDING:
+    run_evaluation(testing_pairs, True, False)
+    run_evaluation(testing_pairs, False, True)
