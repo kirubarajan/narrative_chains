@@ -153,6 +153,7 @@ def predict(chain, embedding=False, interpolation=False):
     return ranked_scores
 
 # testing narrative cloze
+
 testing_pairs = [
     ([("receive", "clients", "nsubj"), ("download", "clients", "dobj")], ("make", "clients", "nsubj")),
     ([("fled", "gelman", "nsubj"), ("found", "gelman", "nsubj")], ("take", "gelman", "nsubj")),
@@ -173,7 +174,7 @@ def get_position(predictions, correct):
             return i + 1
     return len(predictions)
 
-print("\nEvaluating Narrative Cloze Positions: ")
+print("\nEvaluating Narrative Cloze Positions for " + str(len(verbs)) + " verbs:")
 def run_evaluation(testing_pairs, embedding, interpolation):
     if embedding: print("\nembedding model: ")
     elif interpolation: print("\ninterpolated model: ")
