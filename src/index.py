@@ -87,7 +87,6 @@ if "--train" in sys.argv:
         for event in ordered:
             file.write("\n" + str(event))
 
-    # TODO: pickle subjects, objects, coreference, total
     class Model: pass
     model = Model()
     model.subjects, model.objects, model.coreference = dict(subjects), dict(objects), dict(coreference)
